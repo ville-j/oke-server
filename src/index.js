@@ -1,4 +1,6 @@
+require("dotenv").config();
 const express = require("express");
+const jwt = require("jsonwebtoken");
 const app = express();
 const port = 6543;
 const fs = require("fs");
@@ -10,12 +12,24 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
   next();
 });
 
 app.use(express.json());
+
+app.use((req, res, next) => {
+  try {
+    const authType = req.headers.authorization.split(" ")[0];
+    const token = req.headers.authorization.split(" ")[1];
+
+    if (authType !== "Bearer") throw Error("Unsupported auth type");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+  } catch (e) {}
+  next();
+});
 
 app.get("/", (req, res) => res.send("Hello World!"));
 
@@ -61,26 +75,44 @@ app.get("/levelimage/:id", async (req, res) => {
 });
 
 app.post("/users", async (req, res) => {
-  try {
-    const { name, password } = req.body;
-    const id = await OkeApp.createUser({
-      name,
-      password
-    });
-    res.json(id);
-  } catch (e) {
-    res.sendStatus(500);
+  const { name, password } = req.body;
+  const result = await OkeApp.createUser({
+    name,
+    password
+  });
+
+  if (result.ok) {
+    res.json(result.data);
+  } else {
+    res.status(result.code === 23505 ? 409 : 500).json(result);
   }
+});
+
+app.post("/auth", async (req, res) => {
+  const { name, password } = req.body;
+  const user = await OkeApp.auth({ name, password });
+
+  if (!user.data) res.sendStatus(401);
+  else {
+    const token = jwt.sign({ ...user.data }, process.env.JWT_SECRET, {
+      expiresIn: 86400
+    });
+    res.json({ token });
+  }
+});
+
+app.get("/me", async (req, res) => {
+  req.user ? res.json(req.user) : res.sendStatus(401);
 });
 
 app.get("/users", async (req, res) => {
   const users = await OkeApp.getUsers();
-  res.json(users);
+  res.json(users.data);
 });
 
 app.get("/users/:name", async (req, res) => {
   const user = await OkeApp.getUser({ name: req.params.name });
-  user ? res.json(user) : res.sendStatus(404);
+  user.data ? res.json(user.data) : res.sendStatus(404);
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}!`));
