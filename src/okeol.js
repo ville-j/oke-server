@@ -99,6 +99,21 @@ const getUser = async ({ name, id }) => {
   return ok(res.rows[0]);
 };
 
+const getTimes = async () => {
+  const res = await db.query(
+    "SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 ORDER BY created DESC LIMIT 50"
+  );
+  return ok(res.rows);
+};
+
+const getTimesInLevel = async ({ id }) => {
+  const res = await db.query(
+    "SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.lev_id = $1 ORDER BY created DESC LIMIT 50",
+    [id]
+  );
+  return ok(res.rows);
+};
+
 const auth = async ({ name, password }) => {
   const pwdData = await db.query(
     "SELECT pwdhash, pwdsalt FROM kuski WHERE name = $1",
@@ -117,4 +132,11 @@ const auth = async ({ name, password }) => {
   return getUser({ name });
 };
 
-module.exports = { createUser, getUsers, getUser, auth };
+module.exports = {
+  createUser,
+  getUsers,
+  getUser,
+  auth,
+  getTimes,
+  getTimesInLevel
+};

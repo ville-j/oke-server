@@ -115,4 +115,14 @@ app.get("/users/:name", async (req, res) => {
   user.data ? res.json(user.data) : res.sendStatus(404);
 });
 
-app.listen(port, () => console.log(`Server running on port ${port}!`));
+app.get("/times", async (req, res) => {
+  const times = await OkeApp.getTimes();
+  res.json(times.data);
+});
+
+app.get("/times/:id", async (req, res) => {
+  const times = await OkeApp.getTimesInLevel({ id: req.params.id });
+  res.json(times.data);
+});
+
+app.listen(port, () => console.log(`oke-server running on port ${port}`));
