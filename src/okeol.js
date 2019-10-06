@@ -108,10 +108,25 @@ const getTimes = async () => {
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    "SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.lev_id = $1 ORDER BY created DESC LIMIT 50",
+    "SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.lev_id = $1 ORDER BY time ASC LIMIT 50",
     [id]
   );
   return ok(res.rows);
+};
+
+const getLevels = async () => {
+  const res = await db.query(
+    "SELECT lev.id, lev.name, kuski.name AS kuski_name FROM lev LEFT JOIN kuski ON lev.kuski_id = kuski.id ORDER BY lev.created DESC LIMIT 50"
+  );
+  return ok(res.rows);
+};
+
+const getLevel = async ({ id }) => {
+  const res = await db.query(
+    "SELECT lev.id, lev.name, kuski.name AS kuski_name FROM lev LEFT JOIN kuski ON lev.kuski_id = kuski.id WHERE lev.id = $1",
+    [id]
+  );
+  return ok(res.rows[0]);
 };
 
 const auth = async ({ name, password }) => {
@@ -138,5 +153,7 @@ module.exports = {
   getUser,
   auth,
   getTimes,
-  getTimesInLevel
+  getTimesInLevel,
+  getLevels,
+  getLevel
 };

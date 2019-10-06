@@ -121,8 +121,26 @@ app.get("/times", async (req, res) => {
 });
 
 app.get("/times/:id", async (req, res) => {
-  const times = await OkeApp.getTimesInLevel({ id: req.params.id });
-  res.json(times.data);
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) res.sendStatus(400);
+  else {
+    const times = await OkeApp.getTimesInLevel({ id });
+    res.json(times.data);
+  }
+});
+
+app.get("/levels", async (req, res) => {
+  const levels = await OkeApp.getLevels();
+  res.json(levels.data);
+});
+
+app.get("/levels/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) res.sendStatus(400);
+  else {
+    const level = await OkeApp.getLevel({ id });
+    level.data ? res.json(level.data) : res.sendStatus(404);
+  }
 });
 
 app.listen(port, () => console.log(`oke-server running on port ${port}`));
