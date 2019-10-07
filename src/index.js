@@ -7,6 +7,7 @@ const fs = require("fs");
 const API = require("./api");
 const path = require("path");
 const OkeApp = require("./okeol");
+const utils = require("./utils");
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -140,6 +141,21 @@ app.get("/levels/:id", async (req, res) => {
   else {
     const level = await OkeApp.getLevel({ id });
     level.data ? res.json(level.data) : res.sendStatus(404);
+  }
+});
+
+app.get("/levels/:id/map", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) res.sendStatus(400);
+  else {
+    const level = await OkeApp.getLevelData({ id });
+    if (level.data) {
+      const svg = utils.levToSgv(level.data.data);
+      res.setHeader("Content-Type", "image/svg+xml");
+      res.send(svg);
+    } else {
+      res.sendStatus(404);
+    }
   }
 });
 

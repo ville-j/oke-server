@@ -109,54 +109,9 @@ const getLevelImage = async id => {
   const image = await axios
     .get(`https://elma.online/dl/level/${id}`, { responseType: "arraybuffer" })
     .then(async res => {
-      const level = utils.parseLevel(Buffer.from(res.data));
-
-      let minx;
-      let maxx;
-      let miny;
-      let maxy;
-      const svgData = level.polygons
-        .filter(p => !p.grass)
-        .map(p => {
-          return p.vertices
-            .map(v => {
-              if (!minx || v.x < minx) minx = v.x;
-              if (!miny || v.y < miny) miny = v.y;
-              if (!maxx || v.x > maxx) maxx = v.x;
-              if (!maxy || v.y > maxy) maxy = v.y;
-              return [v.x, v.y].join(",");
-            })
-            .join(" ");
-        });
-      const paths = svgData.map(s => {
-        return "M " + s + " z";
-      });
-
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${minx} ${miny} ${maxx -
-        minx} ${maxy - miny}">
-        <g><path d="${paths.join(
-          " "
-        )}" style="fill: #f1f1f1; fill-rule: evenodd"/></g>${level.objects.map(
-        o =>
-          `<circle cx="${o.x}" cy="${o.y}" r="0.4" fill="${getFill(o.type)}"/>`
-      )}</svg>`;
-
-      return svg;
+      return utils.levToSgv(res.data);
     });
   return image;
-};
-
-const getFill = type => {
-  switch (type) {
-    case "apple":
-      return "#af3030";
-    case "exit":
-      return "#ca16e6";
-    case "start":
-      return "#159cd0";
-    default:
-      return "#000";
-  }
 };
 
 module.exports = {

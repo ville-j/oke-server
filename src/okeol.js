@@ -108,7 +108,7 @@ const getTimes = async () => {
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    "SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.lev_id = $1 ORDER BY time ASC LIMIT 50",
+    "SELECT r.id, r.lev_id, lev.name AS lev_name, kuski.name AS kuski_name, t.kuski_id, t.time, r.created FROM (SELECT kuski_id, MIN(time) AS time FROM run WHERE lev_id = $1 AND status = 2 GROUP BY kuski_id) AS t INNER JOIN run AS r ON r.kuski_id = t.kuski_id AND r.time = t.time JOIN lev ON r.lev_id = lev.id JOIN kuski ON r.kuski_id = kuski.id ORDER BY r.time ASC",
     [id]
   );
   return ok(res.rows);
@@ -126,6 +126,11 @@ const getLevel = async ({ id }) => {
     "SELECT lev.id, lev.name, kuski.name AS kuski_name FROM lev LEFT JOIN kuski ON lev.kuski_id = kuski.id WHERE lev.id = $1",
     [id]
   );
+  return ok(res.rows[0]);
+};
+
+const getLevelData = async ({ id }) => {
+  const res = await db.query("SELECT data FROM lev WHERE lev.id = $1", [id]);
   return ok(res.rows[0]);
 };
 
@@ -155,5 +160,6 @@ module.exports = {
   getTimes,
   getTimesInLevel,
   getLevels,
-  getLevel
+  getLevel,
+  getLevelData
 };
