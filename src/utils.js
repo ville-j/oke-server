@@ -241,10 +241,10 @@ const levToSgv = data => {
     .map(p => {
       return p.vertices
         .map(v => {
-          if (!minx || v.x < minx) minx = v.x;
-          if (!miny || v.y < miny) miny = v.y;
-          if (!maxx || v.x > maxx) maxx = v.x;
-          if (!maxy || v.y > maxy) maxy = v.y;
+          if (minx === undefined || v.x < minx) minx = v.x;
+          if (miny === undefined || v.y < miny) miny = v.y;
+          if (maxx === undefined || v.x > maxx) maxx = v.x;
+          if (maxy === undefined || v.y > maxy) maxy = v.y;
           return [v.x, v.y].join(",");
         })
         .join(" ");

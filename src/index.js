@@ -1,13 +1,13 @@
 require("dotenv").config();
 const express = require("express");
 const jwt = require("jsonwebtoken");
+const elmajs = require("./elma-js");
 const app = express();
 const port = 6543;
 const fs = require("fs");
 const API = require("./api");
 const path = require("path");
 const OkeApp = require("./okeol");
-const utils = require("./utils");
 
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -61,17 +61,13 @@ app.get("/battles/:id", async (req, res) => {
 });
 
 app.get("/levelimage/:id", async (req, res) => {
-  res.setHeader("Content-Type", "image/svg+xml");
-  const fn = path.join(__dirname, `/cache/images/${req.params.id}.svg`);
-
-  if (fs.existsSync(fn)) {
-    res.send(fs.readFileSync(fn));
-  } else {
+  try {
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=31557600");
     const data = await API.getLevelImage(req.params.id);
-    fs.writeFile(fn, data, err => {
-      if (err) throw err;
-    });
     res.send(data);
+  } catch (e) {
+    res.sendStatus(404);
   }
 });
 
@@ -150,8 +146,9 @@ app.get("/levels/:id/map", async (req, res) => {
   else {
     const level = await OkeApp.getLevelData({ id });
     if (level.data) {
-      const svg = utils.levToSgv(level.data.data);
+      const svg = elmajs.levToSvg(level.data.data);
       res.setHeader("Content-Type", "image/svg+xml");
+      res.setHeader("Cache-Control", "public, max-age=31557600");
       res.send(svg);
     } else {
       res.sendStatus(404);
