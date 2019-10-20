@@ -156,6 +156,22 @@ const auth = async ({ name, password }) => {
   return getUser({ name });
 };
 
+const searchLevels = async ({ query }) => {
+  const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
+  const res = await db.query(`SELECT name, id FROM lev WHERE name ILIKE $1`, [
+    `${q}%`
+  ]);
+  return ok(res.rows);
+};
+
+const searchUsers = async ({ query }) => {
+  const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
+  const res = await db.query(`SELECT name, id FROM kuski WHERE name ILIKE $1`, [
+    `${q}%`
+  ]);
+  return ok(res.rows);
+};
+
 module.exports = {
   createUser,
   getUsers,
@@ -165,5 +181,7 @@ module.exports = {
   getTimesInLevel,
   getLevels,
   getLevel,
-  getLevelData
+  getLevelData,
+  searchLevels,
+  searchUsers
 };

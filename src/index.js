@@ -156,4 +156,21 @@ app.get("/levels/:id/map", async (req, res) => {
   }
 });
 
+app.get("/search", async (req, res) => {
+  const { query } = req.query;
+  if (!query || query.length < 1) res.sendStatus(400);
+  else {
+    const kuskis = await OkeApp.searchUsers({
+      query
+    });
+    const levels = await OkeApp.searchLevels({
+      query
+    });
+    res.json({
+      kuskis: kuskis.data,
+      levels: levels.data
+    });
+  }
+});
+
 app.listen(port, () => console.log(`oke-server running on port ${port}`));
