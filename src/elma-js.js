@@ -261,7 +261,7 @@ const levToSvg = data => {
           case START:
             return "#159cd0";
           default:
-            return "#000";
+            return "#000000";
         }
       })()}"/>`
   )}</svg>`;
