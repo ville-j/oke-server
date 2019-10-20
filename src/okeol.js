@@ -101,14 +101,18 @@ const getUser = async ({ name, id }) => {
 
 const getTimes = async () => {
   const res = await db.query(
-    "SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 ORDER BY created DESC LIMIT 50"
+    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name
+    FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2
+    ORDER BY created DESC LIMIT 50`
   );
   return ok(res.rows);
 };
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    "SELECT t.id, kuski_id, name, time, t.created FROM (SELECT ROW_NUMBER() OVER (PARTITION BY kuski_id ORDER BY time ASC, created ASC) as RowNum, * FROM run WHERE lev_id = $1) AS t JOIN kuski ON t.kuski_id = kuski.id WHERE RowNum = 1 ORDER BY t.time ASC, t.created ASC",
+    `SELECT t.id, kuski_id, name, time, t.created FROM (SELECT ROW_NUMBER() OVER (PARTITION BY kuski_id
+      ORDER BY time ASC, created ASC) as RowNum, * FROM run WHERE lev_id = $1) AS t JOIN kuski ON t.kuski_id = kuski.id
+      WHERE RowNum = 1 ORDER BY t.time ASC, t.created ASC`,
     [id]
   );
   return ok(res.rows);
