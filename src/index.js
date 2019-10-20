@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const elmajs = require("./elma-js");
+const elmajs = require("elma-js");
 const app = express();
 const port = 6543;
 const fs = require("fs");

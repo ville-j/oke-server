@@ -1,6 +1,6 @@
 const cheerio = require("cheerio");
 const axios = require("axios");
-const utils = require("./utils");
+const elmajs = require("elma-js");
 
 const getBattles = async (includeResults = false) => {
   const res = await axios.get("https://elmaonline.net/home/battles/0");
@@ -109,7 +109,7 @@ const getLevelImage = async id => {
   const image = await axios
     .get(`https://elma.online/dl/level/${id}`, { responseType: "arraybuffer" })
     .then(async res => {
-      return utils.levToSgv(res.data);
+      return elmajs.levToSvg(res.data);
     });
   return image;
 };
