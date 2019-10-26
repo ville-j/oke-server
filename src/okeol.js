@@ -23,12 +23,7 @@ const createPasswordHash = (password, salt) => {
 
   return crypto
     .createHash("sha256")
-    .update(
-      crypto
-        .createHash("sha256")
-        .update(`${salt}${preSaltedPass}`)
-        .digest("hex")
-    )
+    .update(`${salt}${preSaltedPass}`)
     .digest("hex")
     .toUpperCase();
 };
