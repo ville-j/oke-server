@@ -62,9 +62,9 @@ app.get("/battles/:id", async (req, res) => {
 
 app.get("/levelimage/:id", async (req, res) => {
   try {
+    const data = await API.getLevelImage(req.params.id);
     res.setHeader("Content-Type", "image/svg+xml");
     res.setHeader("Cache-Control", "public, max-age=31557600");
-    const data = await API.getLevelImage(req.params.id);
     res.send(data);
   } catch (e) {
     res.sendStatus(404);

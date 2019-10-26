@@ -110,9 +110,7 @@ const getTimes = async () => {
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    `SELECT t.id, kuski_id, name, time, t.created FROM (SELECT ROW_NUMBER() OVER (PARTITION BY kuski_id
-      ORDER BY time ASC, created ASC) as RowNum, * FROM run WHERE lev_id = $1) AS t JOIN kuski ON t.kuski_id = kuski.id
-      WHERE RowNum = 1 ORDER BY t.time ASC, t.created ASC`,
+    `SELECT kuski.name, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON kuski.id = bestrun.kuski_id WHERE lev_id = $1 ORDER BY time, id ASC `,
     [id]
   );
   return ok(res.rows);
