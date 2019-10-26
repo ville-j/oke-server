@@ -13,6 +13,7 @@ const createRandomString = length => {
   return string;
 };
 
+const MAGIC_TIMESTAMP = 1262304000;
 const createPasswordHash = (password, salt) => {
   const preSaltedPass = crypto
     .createHash("sha256")
@@ -67,10 +68,10 @@ const createUser = async ({ name, password }) => {
 
     const salt = createRandomString(8);
     const pwdhash = createPasswordHash(password, salt);
-
+    const timestamp = Math.floor(Date.now() / 1000) - MAGIC_TIMESTAMP;
     const res = await db.query(
-      "INSERT INTO kuski (name, pwdhash, pwdsalt, created) VALUES($1, $2, $3, NOW()) RETURNING id, name, created",
-      [name, pwdhash, salt]
+      "INSERT INTO kuski (name, pwdhash, pwdsalt, created) VALUES($1, $2, $3, $4) RETURNING id, name, created",
+      [name, pwdhash, salt, timestamp]
     );
     return ok(res.rows[0]);
   } catch (e) {
