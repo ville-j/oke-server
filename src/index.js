@@ -112,6 +112,11 @@ app.get("/users/:name", async (req, res) => {
   user.data ? res.json(user.data) : res.sendStatus(404);
 });
 
+app.get("/times/kuski/:id", async (req, res) => {
+  const times = await OkeApp.getKuskiTimes({ id: req.params.id });
+  times.data ? res.json(times.data) : res.sendStatus(500);
+});
+
 app.get("/times", async (req, res) => {
   const times = await OkeApp.getTimes();
   res.json(times.data);

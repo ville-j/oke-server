@@ -88,10 +88,14 @@ const getUsers = async () => {
 const getUser = async ({ name, id }) => {
   if (!id && !name) throw Error("Either name or id is required");
   const res = id
-    ? await db.query("SELECT id, name, created FROM kuski WHERE id = $1", [id])
-    : await db.query("SELECT id, name, created FROM kuski WHERE name = $1", [
-        name
-      ]);
+    ? await db.query(
+        "SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login, priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT JOIN team ON kuski.team_id = team.id WHERE kuski.id = $1",
+        [id]
+      )
+    : await db.query(
+        "SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login, priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT JOIN team ON kuski.team_id = team.id WHERE kuski.name = $1",
+        [name]
+      );
   return ok(res.rows[0]);
 };
 
@@ -107,6 +111,16 @@ const getTimes = async () => {
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
     `SELECT kuski.name, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON kuski.id = bestrun.kuski_id WHERE lev_id = $1 ORDER BY time, id ASC `,
+    [id]
+  );
+  return ok(res.rows);
+};
+
+const getKuskiTimes = async ({ id }) => {
+  const res = await db.query(
+    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name
+    FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.kuski_id = $1
+    ORDER BY run.id DESC LIMIT 50`,
     [id]
   );
   return ok(res.rows);
@@ -177,5 +191,6 @@ module.exports = {
   getLevel,
   getLevelData,
   searchLevels,
-  searchUsers
+  searchUsers,
+  getKuskiTimes
 };
