@@ -126,11 +126,21 @@ const getKuskiTimes = async ({ id }) => {
   return ok(res.rows);
 };
 
-const getLevels = async () => {
+const getLevels = async page => {
+  const pageSize = 20;
+  const total = await db.query("SELECT COUNT(id) FROM lev");
   const res = await db.query(
-    "SELECT lev.id, lev.name, kuski.name AS kuski_name FROM lev LEFT JOIN kuski ON lev.kuski_id = kuski.id ORDER BY lev.created DESC LIMIT 50"
+    "SELECT lev.id, lev.name, kuski.name AS kuski_name FROM lev LEFT JOIN kuski ON lev.kuski_id = kuski.id ORDER BY lev.name ASC OFFSET $1 LIMIT $2",
+    [pageSize * (page - 1), pageSize]
   );
-  return ok(res.rows);
+  return ok({
+    items: res.rows,
+    meta: {
+      total: parseInt(total.rows[0].count, 10),
+      page,
+      pageSize
+    }
+  });
 };
 
 const getLevel = async ({ id }) => {

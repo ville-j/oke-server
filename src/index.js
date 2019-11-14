@@ -132,7 +132,9 @@ app.get("/times/:id", async (req, res) => {
 });
 
 app.get("/levels", async (req, res) => {
-  const levels = await OkeApp.getLevels();
+  const page = Number(req.query.page);
+  if (!Number.isInteger(page) || page < 1) res.sendStatus(400);
+  const levels = await OkeApp.getLevels(page);
   res.json(levels.data);
 });
 
