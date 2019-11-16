@@ -71,9 +71,9 @@ app.get("/levelimage/:id", async (req, res) => {
   }
 });
 
-app.post("/users", async (req, res) => {
+app.post("/kuskis", async (req, res) => {
   const { name, password } = req.body;
-  const result = await OkeApp.createUser({
+  const result = await OkeApp.createKuski({
     name,
     password
   });
@@ -102,13 +102,13 @@ app.get("/me", async (req, res) => {
   req.user ? res.json(req.user) : res.sendStatus(401);
 });
 
-app.get("/users", async (req, res) => {
-  const users = await OkeApp.getUsers();
+app.get("/kuskis", async (req, res) => {
+  const users = await OkeApp.getKuskis();
   res.json(users.data);
 });
 
-app.get("/users/:name", async (req, res) => {
-  const user = await OkeApp.getUser({ name: req.params.name });
+app.get("/kuskis/:name", async (req, res) => {
+  const user = await OkeApp.getKuski({ name: req.params.name });
   user.data ? res.json(user.data) : res.sendStatus(404);
 });
 
@@ -167,7 +167,7 @@ app.get("/search", async (req, res) => {
   const { query } = req.query;
   if (!query || query.length < 1) res.sendStatus(400);
   else {
-    const kuskis = await OkeApp.searchUsers({
+    const kuskis = await OkeApp.searchKuskis({
       query
     });
     const levels = await OkeApp.searchLevels({

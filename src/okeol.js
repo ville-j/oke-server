@@ -44,7 +44,7 @@ const ok = data => {
   };
 };
 
-const createUser = async ({ name, password }) => {
+const createKuski = async ({ name, password }) => {
   try {
     if (!name) {
       return error({
@@ -78,25 +78,31 @@ const createUser = async ({ name, password }) => {
   }
 };
 
-const getUsers = async () => {
-  const res = await db.query(
-    "SELECT id, name, created FROM kuski ORDER BY name ASC"
-  );
-  return ok(res.rows);
-};
-
-const getUser = async ({ name, id }) => {
+const getKuski = async ({ name, id }) => {
   if (!id && !name) throw Error("Either name or id is required");
   const res = id
     ? await db.query(
-        "SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login, priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT JOIN team ON kuski.team_id = team.id WHERE kuski.id = $1",
+        `SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login,
+        priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT
+        JOIN team ON kuski.team_id = team.id WHERE kuski.id = $1`,
         [id]
       )
     : await db.query(
-        "SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login, priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT JOIN team ON kuski.team_id = team.id WHERE kuski.name = $1",
+        `SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login,
+        priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT
+        JOIN team ON kuski.team_id = team.id WHERE kuski.name = $1`,
         [name]
       );
   return ok(res.rows[0]);
+};
+
+const getKuskis = async () => {
+  const res = await db.query(
+    `SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login,
+    priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski
+    LEFT JOIN team ON kuski.team_id = team.id ORDER BY kuski.name`
+  );
+  return ok(res.rows);
 };
 
 const getTimes = async () => {
@@ -110,7 +116,8 @@ const getTimes = async () => {
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    `SELECT kuski.name, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON kuski.id = bestrun.kuski_id WHERE lev_id = $1 ORDER BY time, id ASC `,
+    `SELECT kuski.name, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON
+    kuski.id = bestrun.kuski_id WHERE lev_id = $1 ORDER BY time, id ASC `,
     [id]
   );
   return ok(res.rows);
@@ -127,7 +134,7 @@ const getKuskiTimes = async ({ id }) => {
 };
 
 const getLevels = async page => {
-  const pageSize = 20;
+  const pageSize = 50;
   const total = await db.query("SELECT COUNT(id) FROM lev");
   const res = await db.query(
     "SELECT lev.id, lev.name, kuski.name AS kuski_name FROM lev LEFT JOIN kuski ON lev.kuski_id = kuski.id ORDER BY lev.name ASC OFFSET $1 LIMIT $2",
@@ -171,7 +178,7 @@ const auth = async ({ name, password }) => {
   )
     return error({ code: 2, field: "password", text: "Wrong password" });
 
-  return getUser({ name });
+  return getKuski({ name });
 };
 
 const searchLevels = async ({ query }) => {
@@ -182,7 +189,7 @@ const searchLevels = async ({ query }) => {
   return ok(res.rows);
 };
 
-const searchUsers = async ({ query }) => {
+const searchKuskis = async ({ query }) => {
   const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
   const res = await db.query(`SELECT name, id FROM kuski WHERE name ILIKE $1`, [
     `${q}%`
@@ -191,9 +198,9 @@ const searchUsers = async ({ query }) => {
 };
 
 module.exports = {
-  createUser,
-  getUsers,
-  getUser,
+  createKuski,
+  getKuskis,
+  getKuski,
   auth,
   getTimes,
   getTimesInLevel,
@@ -201,6 +208,6 @@ module.exports = {
   getLevel,
   getLevelData,
   searchLevels,
-  searchUsers,
+  searchKuskis,
   getKuskiTimes
 };
