@@ -107,7 +107,7 @@ const getKuskis = async () => {
 
 const getTimes = async () => {
   const res = await db.query(
-    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name
+    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name, kuski.id AS kuski_id
     FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2
     ORDER BY created DESC LIMIT 50`
   );
@@ -116,7 +116,7 @@ const getTimes = async () => {
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    `SELECT kuski.name, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON
+    `SELECT kuski.name AS kuski_name, kuski_id, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON
     kuski.id = bestrun.kuski_id WHERE lev_id = $1 ORDER BY time, id ASC `,
     [id]
   );
@@ -125,7 +125,7 @@ const getTimesInLevel = async ({ id }) => {
 
 const getKuskiTimes = async ({ id }) => {
   const res = await db.query(
-    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name
+    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name, kuski.id AS kuski_id
     FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.kuski_id = $1
     ORDER BY run.id DESC LIMIT 50`,
     [id]
