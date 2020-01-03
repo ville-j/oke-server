@@ -131,7 +131,7 @@ app.post("/kuskis/:name/shirt", async (req, res) => {
       .parse(req)
       .on("file", function(name, file) {
         try {
-          const shirt_tga = `${file.path}.tga`;
+          const shirt_tga = `${process.env.SHIRT_UPLOAD_PATH}${user.data.name}.tga`;
           const shirt_png = `${process.env.SHIRT_UPLOAD_PATH}${user.data.name}.png`;
           const shirt_crc = `${process.env.SHIRT_UPLOAD_PATH}${user.data.name}.crc`;
           cmd.get(
