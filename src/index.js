@@ -141,10 +141,11 @@ app.post("/kuskis/:name/shirt", async (req, res) => {
                 if (!err) {
                   fs.readFile(shirt_crc, (err, shirtCrc) => {
                     if (!err) {
+                      const shirtCrcLE = shirtCrc.readInt32LE(0);
                       OkeApp.setKuskiShirt({
                         id: user.data.id,
                         data: shirtData,
-                        crc: shirtCrc
+                        crc: shirtCrcLE
                       });
                       fs.unlink(shirt_tga, err => {
                         err && console.log(err);
