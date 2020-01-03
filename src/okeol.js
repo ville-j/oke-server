@@ -197,6 +197,14 @@ const searchKuskis = async ({ query }) => {
   return ok(res.rows);
 };
 
+const setKuskiShirt = async ({ id, data, crc }) => {
+  const res = await db.query(
+    "UPDATE kuski SET shirt = $1, shirtcrc= $2 WHERE id = $3",
+    [data, crc, id]
+  );
+  return ok(res.rows);
+};
+
 module.exports = {
   createKuski,
   getKuskis,
@@ -209,5 +217,6 @@ module.exports = {
   getLevelData,
   searchLevels,
   searchKuskis,
-  getKuskiTimes
+  getKuskiTimes,
+  setKuskiShirt
 };
