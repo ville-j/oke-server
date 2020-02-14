@@ -37,28 +37,19 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => res.send("Hello World!"));
 
 app.get("/battles", async (req, res) => {
-  const battles = await API.getBattles();
-  res.json(battles);
+  let page = Number(req.query.page);
+  if (!Number.isInteger(page) || page < 1) page = 1;
+  const battles = await OkeApp.getBattles({ page });
+  res.json(battles.data);
 });
 
 app.get("/battles/:id", async (req, res) => {
-  const fn = path.join(__dirname, `/cache/${req.params.id}.json`);
-
-  if (fs.existsSync(fn)) {
-    res.send(fs.readFileSync(fn, "utf8"));
-  } else {
-    try {
-      const results = await API.getBattleResults(req.params.id);
-
-      if (!results.ongoing && !results.queued) {
-        fs.writeFile(fn, JSON.stringify(results), err => {
-          if (err) throw err;
-        });
-      }
-      res.json(results);
-    } catch (e) {
-      res.status(404).send(null);
-    }
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) res.sendStatus(400);
+  else {
+    const battle = await OkeApp.getBattle({ id });
+    const results = await OkeApp.getBattleResults({ id });
+    res.json({ ...battle.data, results: results.data });
   }
 });
 
@@ -220,6 +211,19 @@ app.get("/levels/:id/map", async (req, res) => {
       res.setHeader("Content-Type", "image/svg+xml");
       res.setHeader("Cache-Control", "public, max-age=31557600");
       res.send(svg);
+    } else {
+      res.sendStatus(404);
+    }
+  }
+});
+
+app.get("/levels/:id/data", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) res.sendStatus(400);
+  else {
+    const level = await OkeApp.getLevelData({ id });
+    if (level.data) {
+      res.send(Buffer.from(level.data.data));
     } else {
       res.sendStatus(404);
     }

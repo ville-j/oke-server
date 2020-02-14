@@ -163,6 +163,44 @@ const getLevelData = async ({ id }) => {
   return ok(res.rows[0]);
 };
 
+const getBattles = async ({ page }) => {
+  const pageSize = 100;
+  const total = await db.query("SELECT COUNT(id) FROM battle");
+  const res = await db.query(
+    `SELECT battle.id, battle.lev_id, battle.kuski_id AS starter_id, battle.run_id, type, duration, flags, battle.status,
+    battle.created, run.kuski_id AS winner_id, winner.name AS winner_name, starter.name AS starter_name FROM battle
+    JOIN kuski starter ON battle.kuski_id = starter.id LEFT JOIN run ON battle.run_id = run.id LEFT JOIN kuski winner ON run.kuski_id = winner.id
+    ORDER BY battle.created DESC OFFSET $1 LIMIT $2`,
+    [pageSize * (page - 1), pageSize]
+  );
+  return ok({
+    items: res.rows,
+    meta: {
+      total: parseInt(total.rows[0].count, 10),
+      page,
+      pageSize
+    }
+  });
+};
+
+const getBattle = async ({ id }) => {
+  const res = await db.query(
+    `SELECT battle.id, lev_id, type, duration, flags, status, battle.created, battle.kuski_id AS starter_id, kuski.name AS starter_name,
+    lev.name as lev_name FROM battle JOIN kuski ON battle.kuski_id = kuski.id JOIN lev ON battle.lev_id = lev.id WHERE battle.id = $1`,
+    [id]
+  );
+  return ok(res.rows[0]);
+};
+
+const getBattleResults = async ({ id }) => {
+  const res = await db.query(
+    `SELECT batrun.time, run.created, kuski.name as kuski, team.name AS team FROM batrun JOIN run ON run.id = batrun.run_id
+    JOIN kuski ON run.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time ASC`,
+    [id]
+  );
+  return ok(res.rows);
+};
+
 const auth = async ({ name, password }) => {
   const pwdData = await db.query(
     "SELECT pwdhash, pwdsalt FROM kuski WHERE name = $1",
@@ -218,5 +256,8 @@ module.exports = {
   searchLevels,
   searchKuskis,
   getKuskiTimes,
-  setKuskiShirt
+  setKuskiShirt,
+  getBattle,
+  getBattles,
+  getBattleResults
 };
