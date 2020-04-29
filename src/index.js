@@ -10,6 +10,24 @@ const API = require("./api");
 const OkeApp = require("./okeol");
 const cmd = require("node-cmd");
 
+const OkeChatServer = require("./okechatserver");
+const chatServer = OkeChatServer({
+  port: process.env.CHAT_SERVER_PORT,
+});
+
+chatServer.connect({
+  host: "zzz.ink",
+  port: 4000,
+  name: process.env.CHAT_SERVER_USER,
+  pass: process.env.CHAT_SERVER_PASS,
+});
+
+chatServer.on("clientAuth", (data) => {
+  if (!data) return;
+  const decoded = jwt.verify(data.token, process.env.JWT_SECRET);
+  return decoded.name;
+});
+
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header(
