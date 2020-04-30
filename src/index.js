@@ -16,8 +16,8 @@ const chatServer = OkeChatServer({
 });
 
 chatServer.connect({
-  host: "zzz.ink",
-  port: 4000,
+  host: process.env.OKEOL_TCP_HOST,
+  port: process.env.OKEOL_TCP_PORT,
   name: process.env.CHAT_SERVER_USER,
   pass: process.env.CHAT_SERVER_PASS,
 });

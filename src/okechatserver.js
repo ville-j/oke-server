@@ -36,17 +36,12 @@ const OkeChatServer = ({ port }) => {
 
   const cli = new net.Socket();
   let conn = false;
+  let reconnectTime = 1000;
 
   const bDump = (buffer) =>
     console.log(buffer.toString("hex").match(/../g).join(" "));
 
   cli.on("data", (data) => {
-    if (!conn) {
-      // ok if chan field is "server" and name is "err" its eror
-      conn = true;
-      console.log("Connected to okeol");
-    }
-
     const l = data.readInt16LE();
     const code = data.readInt8(2);
 
@@ -61,6 +56,8 @@ const OkeChatServer = ({ port }) => {
           name: d[1],
           message: d[2],
         };
+
+        // ok if chan field is "server" and name is "err" its eror
 
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
@@ -92,10 +89,43 @@ const OkeChatServer = ({ port }) => {
   };
 
   const connect = ({ host, port, name, pass }) => {
+    console.log("connecting to okeol");
     cli.connect(port, host);
 
     cli.on("connect", () => {
+      console.log("connected to okeol");
+      conn = true;
+      reconnectTime = 1000;
       auth(name, pass);
+    });
+
+    cli.on("error", (err) => {
+      conn = false;
+      console.log(err);
+    });
+
+    cli.on("close", (err) => {
+      conn = false;
+      console.log("close");
+
+      setTimeout(() => {
+        reconnectTime = reconnectTime * 2;
+        if (reconnectTime > 300000) {
+          reconnectTime = 300000;
+        }
+        console.log("connecting to okeol");
+        cli.connect(port, host);
+      }, reconnectTime);
+    });
+
+    cli.on("end", () => {
+      conn = false;
+      console.log("end");
+    });
+
+    cli.on("timeout", (t) => {
+      conn = false;
+      console.log("timeout");
     });
   };
 
