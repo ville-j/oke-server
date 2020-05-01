@@ -12,19 +12,24 @@ const OkeChatServer = ({ port }) => {
   });
 
   console.log(`Websocket oke chat server running on port ${port}`);
+  const messageHistory = [];
+  const cli = new net.Socket();
+  let conn = false;
+  let reconnectTime = 1000;
 
   wss.on("connection", (ws) => {
+    let name;
+    ws.send(JSON.stringify({ type: "history", data: messageHistory }));
     ws.on("message", (data) => {
       try {
         const d = JSON.parse(data);
 
         switch (d.type) {
           case "message":
-            ws.kuskiName &&
-              msg(d.data.channel, `${ws.kuskiName}: ${d.data.message}`);
+            name && conn && msg(d.data.channel, `${name}: ${d.data.message}`);
             break;
           case "auth":
-            ws.kuskiName = callbacks.clientAuth && callbacks.clientAuth(d.data);
+            name = callbacks.clientAuth && callbacks.clientAuth(d.data);
             break;
           default:
         }
@@ -33,10 +38,6 @@ const OkeChatServer = ({ port }) => {
       }
     });
   });
-
-  const cli = new net.Socket();
-  let conn = false;
-  let reconnectTime = 1000;
 
   const bDump = (buffer) =>
     console.log(buffer.toString("hex").match(/../g).join(" "));
@@ -55,9 +56,15 @@ const OkeChatServer = ({ port }) => {
           channel: d[0],
           name: d[1],
           message: d[2],
+          date: new Date(),
         };
 
         // ok if chan field is "server" and name is "err" its eror
+
+        if (messageHistory.length === 50) {
+          messageHistory.shift();
+        }
+        messageHistory.push(line);
 
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
