@@ -123,7 +123,7 @@ const updateKuski = async ({ country, id }) => {
 
 const getTimes = async () => {
   const res = await db.query(
-    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name, kuski.id AS kuski_id
+    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name, kuski.id AS kuski_id, kuski.country AS kuski_country
     FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2
     ORDER BY created DESC LIMIT 50`
   );
@@ -132,7 +132,7 @@ const getTimes = async () => {
 
 const getTimesInLevel = async ({ id }) => {
   const res = await db.query(
-    `SELECT kuski.name AS kuski_name, kuski_id, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON
+    `SELECT kuski.name AS kuski_name, kuski_id, kuski.country AS kuski_country, bestrun.time, bestrun.id, bestrun.lev_id FROM bestrun JOIN kuski ON
     kuski.id = bestrun.kuski_id WHERE lev_id = $1 ORDER BY time, id ASC `,
     [id]
   );
@@ -141,7 +141,7 @@ const getTimesInLevel = async ({ id }) => {
 
 const getKuskiTimes = async ({ id }) => {
   const res = await db.query(
-    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name, kuski.id AS kuski_id
+    `SELECT run.id, lev_id, time, run.created, lev.name AS lev_name, kuski.name AS kuski_name, kuski.id AS kuski_id, kuski.country AS kuski_country
     FROM run JOIN lev ON run.lev_id = lev.id JOIN kuski ON run.kuski_id = kuski.id WHERE status = 2 AND run.kuski_id = $1
     ORDER BY run.id DESC LIMIT 50`,
     [id]
@@ -210,7 +210,7 @@ const getBattle = async ({ id }) => {
 
 const getBattleResults = async ({ id }) => {
   const res = await db.query(
-    `SELECT batrun.time, run.created, kuski.name as kuski, team.name AS team FROM batrun JOIN run ON run.id = batrun.run_id
+    `SELECT batrun.time, run.created, kuski.name as kuski, kuski.country AS kuski_country, team.name AS team FROM batrun JOIN run ON run.id = batrun.run_id
     JOIN kuski ON run.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time ASC`,
     [id]
   );
