@@ -9,6 +9,7 @@ const fs = require("fs");
 const API = require("./api");
 const OkeApp = require("./okeol");
 const cmd = require("node-cmd");
+const countries = require("./countries");
 
 const OkeChatServer = require("./okechatserver");
 const chatServer = OkeChatServer({
@@ -34,19 +35,28 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
   );
+  res.header(
+    "Access-Control-Allow-Methods",
+    "PUT, PATCH, POST, GET, DELETE, OPTIONS"
+  );
   next();
 });
 
 app.use(express.json());
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   try {
     const authType = req.headers.authorization.split(" ")[0];
     const token = req.headers.authorization.split(" ")[1];
 
     if (authType !== "Bearer") throw Error("Unsupported auth type");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const user = await OkeApp.getKuski({ id: decoded.id });
+
+    if (user) req.user = user.data;
+    else {
+      throw Error("User not found");
+    }
   } catch (e) {}
   next();
 });
@@ -82,10 +92,11 @@ app.get("/levelimage/:id", async (req, res) => {
 });
 
 app.post("/kuskis", async (req, res) => {
-  const { name, password } = req.body;
+  const { name, password, country } = req.body;
   const result = await OkeApp.createKuski({
     name,
     password,
+    country,
   });
 
   if (result.ok) {
@@ -261,6 +272,38 @@ app.get("/search", async (req, res) => {
       kuskis: kuskis.data,
       levels: levels.data,
     });
+  }
+});
+
+app.get("/countries", async (req, res) => {
+  res.json(countries);
+});
+
+app.patch("/settings", async (req, res) => {
+  if (req.user) {
+    const kuski = await OkeApp.getKuski({ id: req.user.id });
+    if (kuski) {
+      const { data } = kuski;
+
+      const keys = ["country"];
+      const obj = {};
+
+      keys.forEach((k) => {
+        if (req.body[k]) {
+          obj[k] = req.body[k];
+        }
+      });
+
+      const newData = {
+        ...data,
+        ...obj,
+      };
+
+      OkeApp.updateKuski(newData);
+      res.sendStatus(200);
+    }
+  } else {
+    res.sendStatus(401);
   }
 });
 

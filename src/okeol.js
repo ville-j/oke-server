@@ -1,7 +1,8 @@
 const db = require("./db");
+const countries = require("./countries");
 const crypto = require("crypto");
 
-const createRandomString = length => {
+const createRandomString = (length) => {
   let string = "";
   const characters =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -33,31 +34,38 @@ const error = ({ code, field, text }) => {
     ok: false,
     code: Number(code),
     field,
-    text
+    text,
   };
 };
 
-const ok = data => {
+const ok = (data) => {
   return {
     ok: true,
-    data
+    data,
   };
 };
 
-const createKuski = async ({ name, password }) => {
+const createKuski = async ({ name, password, country }) => {
   try {
     if (!name) {
       return error({
         code: 1,
         field: "name",
-        text: "Username must be defined"
+        text: "Username must be defined",
       });
     }
     if (!password) {
       return error({
         code: 2,
         field: "password",
-        text: "Password must be defined"
+        text: "Password must be defined",
+      });
+    }
+    if (!countries[country.toUpperCase()]) {
+      return error({
+        code: 3,
+        field: "country",
+        text: "Invalid country",
       });
     }
 
@@ -65,15 +73,15 @@ const createKuski = async ({ name, password }) => {
     const pwdhash = createPasswordHash(password, salt);
     const timestamp = Math.floor(Date.now() / 1000) - MAGIC_TIMESTAMP;
     const res = await db.query(
-      "INSERT INTO kuski (name, pwdhash, pwdsalt, created) VALUES($1, $2, $3, $4) RETURNING id, name, created",
-      [name, pwdhash, salt, timestamp]
+      "INSERT INTO kuski (name, pwdhash, pwdsalt, created, country) VALUES($1, $2, $3, $4, $5) RETURNING id, name, created",
+      [name, pwdhash, salt, timestamp, country.toLowerCase()]
     );
     return ok(res.rows[0]);
   } catch (e) {
     return error({
       code: e.code,
       field: e.code === "23505" ? "name" : "unknown",
-      text: e.code === "23505" ? "Username already taken" : e.detail
+      text: e.code === "23505" ? "Username already taken" : e.detail,
     });
   }
 };
@@ -83,13 +91,13 @@ const getKuski = async ({ name, id }) => {
   const res = id
     ? await db.query(
         `SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login,
-        priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT
+        priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team, country FROM kuski LEFT
         JOIN team ON kuski.team_id = team.id WHERE kuski.id = $1`,
         [id]
       )
     : await db.query(
         `SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login,
-        priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski LEFT
+        priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team, country FROM kuski LEFT
         JOIN team ON kuski.team_id = team.id WHERE kuski.name = $1`,
         [name]
       );
@@ -99,10 +107,18 @@ const getKuski = async ({ name, id }) => {
 const getKuskis = async () => {
   const res = await db.query(
     `SELECT kuski.id, kuski.name, kuski.created, playtime, runcount, runfinish, priv_login,
-    priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team FROM kuski
+    priv_rcon, priv_chat, priv_play, priv_start, priv_stop, team.name AS team, country FROM kuski
     LEFT JOIN team ON kuski.team_id = team.id ORDER BY kuski.name`
   );
   return ok(res.rows);
+};
+
+const updateKuski = async ({ country, id }) => {
+  const res = await db.query("UPDATE kuski SET country = $2 WHERE id = $1", [
+    id,
+    country,
+  ]);
+  return ok(res);
 };
 
 const getTimes = async () => {
@@ -133,7 +149,7 @@ const getKuskiTimes = async ({ id }) => {
   return ok(res.rows);
 };
 
-const getLevels = async page => {
+const getLevels = async (page) => {
   const pageSize = 50;
   const total = await db.query("SELECT COUNT(id) FROM lev");
   const res = await db.query(
@@ -145,8 +161,8 @@ const getLevels = async page => {
     meta: {
       total: parseInt(total.rows[0].count, 10),
       page,
-      pageSize
-    }
+      pageSize,
+    },
   });
 };
 
@@ -178,8 +194,8 @@ const getBattles = async ({ page }) => {
     meta: {
       total: parseInt(total.rows[0].count, 10),
       page,
-      pageSize
-    }
+      pageSize,
+    },
   });
 };
 
@@ -222,7 +238,7 @@ const auth = async ({ name, password }) => {
 const searchLevels = async ({ query }) => {
   const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
   const res = await db.query(`SELECT name, id FROM lev WHERE name ILIKE $1`, [
-    `${q}%`
+    `${q}%`,
   ]);
   return ok(res.rows);
 };
@@ -230,7 +246,7 @@ const searchLevels = async ({ query }) => {
 const searchKuskis = async ({ query }) => {
   const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
   const res = await db.query(`SELECT name, id FROM kuski WHERE name ILIKE $1`, [
-    `${q}%`
+    `${q}%`,
   ]);
   return ok(res.rows);
 };
@@ -259,5 +275,6 @@ module.exports = {
   setKuskiShirt,
   getBattle,
   getBattles,
-  getBattleResults
+  getBattleResults,
+  updateKuski,
 };
