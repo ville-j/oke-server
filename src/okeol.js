@@ -180,7 +180,7 @@ const getLevelData = async ({ id }) => {
 };
 
 const getBattles = async ({ page }) => {
-  const pageSize = 100;
+  const pageSize = 200;
   const total = await db.query("SELECT COUNT(id) FROM battle");
   const res = await db.query(
     `SELECT battle.id, battle.lev_id, battle.kuski_id AS starter_id, battle.run_id, type, duration, flags, battle.status,
@@ -210,8 +210,8 @@ const getBattle = async ({ id }) => {
 
 const getBattleResults = async ({ id }) => {
   const res = await db.query(
-    `SELECT batrun.time, run.created, kuski.name as kuski, kuski.country AS kuski_country, team.name AS team FROM batrun JOIN run ON run.id = batrun.run_id
-    JOIN kuski ON run.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time ASC`,
+    `SELECT batrun.time, batrun.created, kuski.name as kuski, kuski.country AS kuski_country, team.name AS team FROM batrun
+    JOIN kuski ON batrun.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time ASC`,
     [id]
   );
   return ok(res.rows);
