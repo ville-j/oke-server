@@ -211,10 +211,54 @@ const getBattle = async ({ id }) => {
 const getBattleResults = async ({ id }) => {
   const res = await db.query(
     `SELECT batrun.time, batrun.created, kuski.name as kuski, kuski.country AS kuski_country, team.name AS team FROM batrun
-    JOIN kuski ON batrun.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time ASC`,
+    JOIN kuski ON batrun.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time, batrun.id ASC`,
     [id]
   );
   return ok(res.rows);
+};
+
+const joinTeam = async ({ team, password, kuskiId }) => {
+  const existing = await db.query(
+    `SELECT id, pwdhash, pwdsalt FROM team WHERE LOWER(name) = LOWER($1)`,
+    [team]
+  );
+
+  let teamId = existing.rows[0] ? existing.rows[0].id : null;
+
+  if (teamId) {
+    if (
+      existing.rows[0].pwdhash !==
+      createPasswordHash(password, existing.rows[0].pwdsalt)
+    ) {
+      console.log("wrong");
+      return error({ code: 1, field: "password", text: "Wrong password" });
+    }
+  }
+
+  if (!existing.rows[0] && team) {
+    const timestamp = Math.floor(Date.now() / 1000) - MAGIC_TIMESTAMP;
+    const salt = createRandomString(8);
+    const pwdhash = createPasswordHash(password, salt);
+    const t = await db.query(
+      `INSERT INTO team (name, pwdhash, pwdsalt, created) VALUES ($1, $2, $3, $4) RETURNING id`,
+      [team, pwdhash, salt, timestamp]
+    );
+
+    teamId = t.rows[0].id;
+  }
+
+  await db.query(`UPDATE kuski SET team_id = $1 WHERE id = $2`, [
+    teamId,
+    kuskiId,
+  ]);
+
+  if (!teamId) return ok({ name: "" });
+
+  const res = await db.query(`SELECT name, id FROM team WHERE id = $1`, [
+    teamId,
+  ]);
+
+  return ok(res.rows[0]);
 };
 
 const auth = async ({ name, password }) => {
@@ -277,4 +321,5 @@ module.exports = {
   getBattles,
   getBattleResults,
   updateKuski,
+  joinTeam,
 };

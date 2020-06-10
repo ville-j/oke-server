@@ -307,4 +307,14 @@ app.patch("/settings", async (req, res) => {
   }
 });
 
+app.post("/teams", async (req, res) => {
+  if (req.user) {
+    const { team, password } = req.body;
+    const t = await OkeApp.joinTeam({ team, password, kuskiId: req.user.id });
+    t.ok ? res.json(t) : res.status(500).send(t);
+  } else {
+    res.sendStatus(401);
+  }
+});
+
 app.listen(port, () => console.log(`oke-server running on port ${port}`));
