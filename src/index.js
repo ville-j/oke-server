@@ -172,7 +172,7 @@ app.post("/kuskis/:name/shirt", async (req, res) => {
                       fs.unlink(shirt_crc, (err) => {
                         err && console.log(err);
                       });
-                      res.sendStatus(201);
+                      res.status(201).json({ shirt_crc: shirtCrcLE });
                     } else {
                       console.log(err);
                       res.sendStatus(500);
@@ -215,7 +215,7 @@ app.get("/times/:id", async (req, res) => {
 
 app.get("/levels", async (req, res) => {
   const page = Number(req.query.page);
-  if (!Number.isInteger(page) || page < 1) res.sendStatus(400);
+  if (!Number.isInteger(page) || page < 1) page = 1;
   const levels = await OkeApp.getLevels(page);
   res.json(levels.data);
 });
