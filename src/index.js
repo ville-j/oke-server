@@ -65,8 +65,10 @@ app.get("/", (req, res) => res.send("Hello World!"));
 
 app.get("/battles", async (req, res) => {
   let page = Number(req.query.page);
+  let date = Number(req.query.t);
   if (!Number.isInteger(page) || page < 1) page = 1;
-  const battles = await OkeApp.getBattles({ page });
+  if (!Number.isInteger(date)) date = Math.floor(new Date() / 1000) - 86400;
+  const battles = await OkeApp.getBattles({ page, date });
   res.json(battles.data);
 });
 

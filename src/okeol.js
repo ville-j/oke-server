@@ -179,24 +179,19 @@ const getLevelData = async ({ id }) => {
   return ok(res.rows[0]);
 };
 
-const getBattles = async ({ page }) => {
-  const pageSize = 200;
-  const total = await db.query("SELECT COUNT(id) FROM battle");
+const getBattles = async ({ page, date }) => {
+  const pageSize = 50;
+  const start = date - MAGIC_TIMESTAMP;
+  const end = start + 86400;
+
   const res = await db.query(
     `SELECT battle.id, battle.lev_id, battle.kuski_id AS starter_id, battle.run_id, type, duration, flags, battle.status,
     battle.created, run.kuski_id AS winner_id, winner.name AS winner_name, starter.name AS starter_name FROM battle
     JOIN kuski starter ON battle.kuski_id = starter.id LEFT JOIN run ON battle.run_id = run.id LEFT JOIN kuski winner ON run.kuski_id = winner.id
-    ORDER BY battle.created DESC OFFSET $1 LIMIT $2`,
-    [pageSize * (page - 1), pageSize]
+    WHERE battle.created > $3 AND battle.created < $4 ORDER BY battle.created DESC OFFSET $1 LIMIT $2`,
+    [pageSize * (page - 1), pageSize, start, end]
   );
-  return ok({
-    items: res.rows,
-    meta: {
-      total: parseInt(total.rows[0].count, 10),
-      page,
-      pageSize,
-    },
-  });
+  return ok(res.rows);
 };
 
 const getBattle = async ({ id }) => {
