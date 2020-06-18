@@ -78,7 +78,10 @@ app.get("/battles/:id", async (req, res) => {
   else {
     const battle = await OkeApp.getBattle({ id });
     const results = await OkeApp.getBattleResults({ id });
-    res.json({ ...battle.data, results: results.data });
+
+    battle.data
+      ? res.json({ ...battle.data, results: results.data })
+      : res.sendStatus(404);
   }
 });
 
