@@ -533,9 +533,9 @@ ee-first@1.1.1:
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
   integrity sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=
 
-"elma-js@https://github.com/ville-j/elma-js":
+"elma-js@https://github.com/ville-j/elma-js.git":
   version "1.0.0"
-  resolved "https://github.com/ville-j/elma-js#0709bf5b4aad59a6a841dcd9c58c6414d0b01924"
+  resolved "https://github.com/ville-j/elma-js.git#4946ca1f428f76d124dbb571882daf4ad6bec61b"
 
 encodeurl@~1.0.2:
   version "1.0.2"

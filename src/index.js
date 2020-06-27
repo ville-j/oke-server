@@ -10,9 +10,8 @@ const API = require("./api");
 const OkeApp = require("./okeol");
 const cmd = require("node-cmd");
 const countries = require("./countries");
-
 const OkeChatServer = require("./okechatserver");
-const { isRegExp } = require("util");
+
 const chatServer = OkeChatServer({
   port: process.env.CHAT_SERVER_PORT,
 });
