@@ -12,6 +12,7 @@ const cmd = require("node-cmd");
 const countries = require("./countries");
 
 const OkeChatServer = require("./okechatserver");
+const { isRegExp } = require("util");
 const chatServer = OkeChatServer({
   port: process.env.CHAT_SERVER_PORT,
 });
@@ -221,7 +222,7 @@ app.get("/times/:id", async (req, res) => {
 app.get("/levels", async (req, res) => {
   const page = Number(req.query.page);
   if (!Number.isInteger(page) || page < 1) page = 1;
-  const levels = await OkeApp.getLevels(page);
+  const levels = await OkeApp.getLevels({ page });
   res.json(levels.data);
 });
 
@@ -260,6 +261,94 @@ app.get("/levels/:id/data", async (req, res) => {
     } else {
       res.sendStatus(404);
     }
+  }
+});
+
+app.get("/levelpacks", async (req, res) => {
+  let page = Number(req.query.page);
+  if (!Number.isInteger(page) || page < 1) page = 1;
+  const levelPacks = await OkeApp.getLevelPacks({ page });
+  res.json(levelPacks.data);
+});
+
+app.post("/levelpacks", async (req, res) => {
+  if (!req.user) {
+    const { name_short, name_long, descrip } = req.body;
+    if (!name_short || !name_long || !descrip) {
+      res.sendStatus(400);
+    } else {
+      const levpack = await OkeApp.createLevelPack({
+        kuskiId: 58,
+        nameShort: name_short.substring(0, 15),
+        nameLong: name_long.substring(0, 63),
+        description: descrip.substring(0, 255),
+      });
+      levpack.ok ? res.json(levpack.data) : res.status(403).json(levpack);
+    }
+  } else {
+    res.sendStatus(401);
+  }
+});
+
+app.get("/levelpacks/:name", async (req, res) => {
+  const name = req.params.name;
+  const levelPack = await OkeApp.getLevelPack({ name });
+
+  if (levelPack.data) {
+    const levelPackLevels = await OkeApp.getLevelPackLevels({
+      packId: levelPack.data.id,
+    });
+    res.json({
+      ...levelPack.data,
+      levels: levelPackLevels.data || [],
+    });
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+app.get("/levelpacks/:name/levels", async (req, res) => {
+  const name = req.params.name;
+  const levelPack = await OkeApp.getLevelPack({ name });
+  if (levelPack.data) {
+    const levelPackLevels = await OkeApp.getLevelPackLevels({
+      packId: levelPack.data.id,
+    });
+    res.json(levelPackLevels.data);
+  } else {
+    res.sendStatus(404);
+  }
+});
+
+app.post("/levelpacks/:name", async (req, res) => {
+  const name = req.params.name;
+  const { levId } = req.body;
+  const levelPack = await OkeApp.getLevelPack({ name });
+  if (levelPack.data && levId) {
+    const lev = await OkeApp.getLevel({ id: levId });
+    if (lev.data) {
+      await OkeApp.addLevelPackLevel({
+        levPackId: levelPack.data.id,
+        levId: lev.data.id,
+      });
+      res.sendStatus(201);
+    } else {
+      res.sendStatus(400);
+    }
+  } else {
+    res.sendStatus(400);
+  }
+});
+
+app.delete("/levelpacks/:name", async (req, res) => {
+  const name = req.params.name;
+  const { levId } = req.body;
+  const levelPack = await OkeApp.getLevelPack({ name });
+  if (levelPack.data && levId) {
+    await OkeApp.removeLevelPackLevel({ levPackId: levelPack.data.id, levId });
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(400);
   }
 });
 

@@ -15,6 +15,8 @@ const createRandomString = (length) => {
 };
 
 const MAGIC_TIMESTAMP = 1262304000;
+const now = () => Math.floor(Date.now() / 1000) - MAGIC_TIMESTAMP;
+
 const createPasswordHash = (password, salt) => {
   const preSaltedPass = crypto
     .createHash("sha256")
@@ -149,7 +151,7 @@ const getKuskiTimes = async ({ id }) => {
   return ok(res.rows);
 };
 
-const getLevels = async (page) => {
+const getLevels = async ({ page }) => {
   const pageSize = 50;
   const total = await db.query("SELECT COUNT(id) FROM lev");
   const res = await db.query(
@@ -164,6 +166,84 @@ const getLevels = async (page) => {
       pageSize,
     },
   });
+};
+
+const getLevelPacks = async ({ page }) => {
+  const pageSize = 50;
+  const total = await db.query("SELECT COUNT(id) FROM pak");
+  const res = await db.query(
+    `SELECT id, kuski_id, created, name_short, name_long, descrip FROM pak ORDER BY name_short OFFSET $1 LIMIT $2`,
+    [pageSize * (page - 1), pageSize]
+  );
+  return ok({
+    items: res.rows,
+    meta: {
+      total: parseInt(total.rows[0].count, 10),
+      page,
+      pageSize,
+    },
+  });
+};
+
+const getLevelPack = async ({ name }) => {
+  const res = await db.query(
+    "SELECT id, kuski_id, created, name_short, name_long, descrip FROM pak WHERE LOWER(name_short) = LOWER($1)",
+    [name]
+  );
+
+  return ok(res.rows[0]);
+};
+
+const getLevelPackLevels = async ({ packId }) => {
+  const res = await db.query(
+    "SELECT pak_id, lev_id, lev.name AS lev_name FROM paklev JOIN lev ON lev_id = lev.id WHERE pak_id = $1 ORDER BY lev.name ASC",
+    [packId]
+  );
+  return ok(res.rows);
+};
+
+const createLevelPack = async ({
+  kuskiId,
+  nameShort,
+  nameLong,
+  description,
+}) => {
+  const existing = await getLevelPack({ name: nameShort });
+  if (existing) {
+    return error({
+      code: 0,
+      field: "name_short",
+      text: "level pack with the same name already exists",
+    });
+  }
+  const res = await db.query(
+    "INSERT INTO pak (kuski_id, created, name_short, name_long, descrip) VALUES ($1, $2, $3, $4, $5) RETURNING id, created, name_short",
+    [kuskiId, now(), nameShort, nameLong, description]
+  );
+  return ok(res.rows[0]);
+};
+
+const addLevelPackLevel = async ({ levPackId, levId }) => {
+  const res = await db.query(
+    "SELECT id FROM paklev WHERE pak_id = $1 AND lev_id = $2",
+    [levPackId, levId]
+  );
+
+  if (res.rows.length === 0) {
+    await db.query("INSERT INTO paklev (pak_id, lev_id) VALUES ($1, $2)", [
+      levPackId,
+      levId,
+    ]);
+  }
+  return ok();
+};
+
+const removeLevelPackLevel = async ({ levPackId, levId }) => {
+  await db.query("DELETE FROM paklev WHERE pak_id = $1 AND lev_id = $2", [
+    levPackId,
+    levId,
+  ]);
+  return ok();
 };
 
 const getLevel = async ({ id }) => {
@@ -205,7 +285,7 @@ const getBattle = async ({ id }) => {
 
 const getBattleResults = async ({ id }) => {
   const res = await db.query(
-    `SELECT batrun.time, batrun.created, kuski.name as kuski, kuski.country AS kuski_country, team.name AS team FROM batrun
+    `SELECT batrun.time, batrun.created, kuski.name as kuski_name, kuski.country AS kuski_country, team.name AS kuski_team FROM batrun
     JOIN kuski ON batrun.kuski_id = kuski.id LEFT JOIN team ON kuski.team_id = team.id WHERE batrun.battle_id = $1 ORDER BY batrun.time, batrun.id ASC`,
     [id]
   );
@@ -317,4 +397,10 @@ module.exports = {
   getBattleResults,
   updateKuski,
   joinTeam,
+  getLevelPacks,
+  getLevelPack,
+  getLevelPackLevels,
+  createLevelPack,
+  addLevelPackLevel,
+  removeLevelPackLevel,
 };
