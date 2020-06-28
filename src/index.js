@@ -295,7 +295,7 @@ app.post("/levelpacks", async (req, res) => {
       res.sendStatus(400);
     } else {
       const levpack = await OkeApp.createLevelPack({
-        kuskiId: 58,
+        kuskiId: req.user.id,
         nameShort: name_short.substring(0, 15),
         nameLong: name_long.substring(0, 63),
         description: descrip.substring(0, 255),
