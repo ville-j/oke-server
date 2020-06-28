@@ -185,11 +185,16 @@ const getLevelPacks = async ({ page }) => {
   });
 };
 
-const getLevelPack = async ({ name }) => {
-  const res = await db.query(
-    "SELECT id, kuski_id, created, name_short, name_long, descrip FROM pak WHERE LOWER(name_short) = LOWER($1)",
-    [name]
-  );
+const getLevelPack = async ({ name, id }) => {
+  const res = id
+    ? await db.query(
+        "SELECT id, kuski_id, created, name_short, name_long, descrip FROM pak WHERE id = $1",
+        [id]
+      )
+    : await db.query(
+        "SELECT id, kuski_id, created, name_short, name_long, descrip FROM pak WHERE LOWER(name_short) = LOWER($1)",
+        [name]
+      );
 
   return ok(res.rows[0]);
 };
@@ -209,7 +214,11 @@ const createLevelPack = async ({
   description,
 }) => {
   const existing = await getLevelPack({ name: nameShort });
-  if (existing) {
+
+  if (!existing.ok) {
+    return error({ code: 1 });
+  }
+  if (existing.data) {
     return error({
       code: 0,
       field: "name_short",
@@ -220,6 +229,35 @@ const createLevelPack = async ({
     "INSERT INTO pak (kuski_id, created, name_short, name_long, descrip) VALUES ($1, $2, $3, $4, $5) RETURNING id, created, name_short",
     [kuskiId, now(), nameShort, nameLong, description]
   );
+  return ok(res.rows[0]);
+};
+
+const editLevelPack = async ({ id, nameShort, nameLong, description }) => {
+  const existing = await getLevelPack({ name: nameShort });
+
+  if (!existing.ok) {
+    return error({ code: 1 });
+  }
+  if (existing.data) {
+    if (existing.data.id !== Number(id)) {
+      return error({
+        code: 0,
+        field: "name_short",
+        text: "level pack with the same name already exists",
+      });
+    }
+  }
+
+  const res = await db.query(
+    "UPDATE pak SET name_short = $1, name_long = $2, descrip = $3 WHERE id = $4",
+    [nameShort, nameLong, description, id]
+  );
+  return ok(res.rows[0]);
+};
+
+const deleteLevelPack = async ({ id }) => {
+  await db.query("DELETE FROM paklev WHERE pak_id = $1", [id]);
+  const res = await db.query("DELETE FROM pak WHERE id = $1", [id]);
   return ok(res.rows[0]);
 };
 
@@ -356,17 +394,19 @@ const auth = async ({ name, password }) => {
 
 const searchLevels = async ({ query }) => {
   const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
-  const res = await db.query(`SELECT name, id FROM lev WHERE name ILIKE $1`, [
-    `${q}%`,
-  ]);
+  const res = await db.query(
+    `SELECT name, id FROM lev WHERE name ILIKE $1 LIMIT 100`,
+    [`${q}%`]
+  );
   return ok(res.rows);
 };
 
 const searchKuskis = async ({ query }) => {
   const q = query.replace(/[^0-9a-zA-Z_-]/g, "");
-  const res = await db.query(`SELECT name, id FROM kuski WHERE name ILIKE $1`, [
-    `${q}%`,
-  ]);
+  const res = await db.query(
+    `SELECT name, id FROM kuski WHERE name ILIKE $1 LIMIT 100`,
+    [`${q}%`]
+  );
   return ok(res.rows);
 };
 
@@ -403,4 +443,6 @@ module.exports = {
   createLevelPack,
   addLevelPackLevel,
   removeLevelPackLevel,
+  editLevelPack,
+  deleteLevelPack,
 };

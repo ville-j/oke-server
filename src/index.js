@@ -265,13 +265,31 @@ app.get("/levels/:id/data", async (req, res) => {
 
 app.get("/levelpacks", async (req, res) => {
   let page = Number(req.query.page);
-  if (!Number.isInteger(page) || page < 1) page = 1;
-  const levelPacks = await OkeApp.getLevelPacks({ page });
-  res.json(levelPacks.data);
+  const id = Number(req.query.id);
+
+  if (id) {
+    const levelPack = await OkeApp.getLevelPack({ id });
+
+    if (levelPack.data) {
+      const levelPackLevels = await OkeApp.getLevelPackLevels({
+        packId: levelPack.data.id,
+      });
+      res.json({
+        ...levelPack.data,
+        levels: levelPackLevels.data || [],
+      });
+    } else {
+      res.sendStatus(404);
+    }
+  } else {
+    if (!Number.isInteger(page) || page < 1) page = 1;
+    const levelPacks = await OkeApp.getLevelPacks({ page });
+    res.json(levelPacks.data);
+  }
 });
 
 app.post("/levelpacks", async (req, res) => {
-  if (!req.user) {
+  if (req.user) {
     const { name_short, name_long, descrip } = req.body;
     if (!name_short || !name_long || !descrip) {
       res.sendStatus(400);
@@ -286,6 +304,31 @@ app.post("/levelpacks", async (req, res) => {
     }
   } else {
     res.sendStatus(401);
+  }
+});
+
+app.put("/levelpacks", async (req, res) => {
+  const { name_short, name_long, descrip, id } = req.body;
+  if (!name_short || !name_long || !descrip || !id) {
+    res.sendStatus(400);
+  } else {
+    const pack = await OkeApp.getLevelPack({ id });
+
+    if (pack.data) {
+      if (pack.data.kuski_id === req.user.id) {
+        const levpack = await OkeApp.editLevelPack({
+          id,
+          nameShort: name_short.substring(0, 15),
+          nameLong: name_long.substring(0, 63),
+          description: descrip.substring(0, 255),
+        });
+        levpack.ok ? res.json(levpack.data) : res.status(403).json(levpack);
+      } else {
+        res.sendStatus(403);
+      }
+    } else {
+      res.sendStatus(404);
+    }
   }
 });
 
@@ -319,51 +362,94 @@ app.get("/levelpacks/:name/levels", async (req, res) => {
   }
 });
 
-app.post("/levelpacks/:name", async (req, res) => {
-  const name = req.params.name;
-  const { levId } = req.body;
-  const levelPack = await OkeApp.getLevelPack({ name });
-  if (levelPack.data && levId) {
-    const lev = await OkeApp.getLevel({ id: levId });
-    if (lev.data) {
-      await OkeApp.addLevelPackLevel({
-        levPackId: levelPack.data.id,
-        levId: lev.data.id,
-      });
-      res.sendStatus(201);
+app.post("/levelpacks/:id", async (req, res) => {
+  if (req.user) {
+    const { levId } = req.body;
+    const { id } = req.params;
+    const levelPack = await OkeApp.getLevelPack({ id });
+    if (levelPack.data && levId) {
+      if (levelPack.data.kuski_id === req.user.id) {
+        const lev = await OkeApp.getLevel({ id: levId });
+        if (lev.data) {
+          await OkeApp.addLevelPackLevel({
+            levPackId: levelPack.data.id,
+            levId: lev.data.id,
+          });
+          res.sendStatus(201);
+        } else {
+          res.sendStatus(400);
+        }
+      } else {
+        res.sendStatus(403);
+      }
     } else {
       res.sendStatus(400);
     }
   } else {
-    res.sendStatus(400);
+    res.sendStatus(401);
   }
 });
 
-app.delete("/levelpacks/:name", async (req, res) => {
-  const name = req.params.name;
-  const { levId } = req.body;
-  const levelPack = await OkeApp.getLevelPack({ name });
-  if (levelPack.data && levId) {
-    await OkeApp.removeLevelPackLevel({ levPackId: levelPack.data.id, levId });
-    res.sendStatus(200);
+app.delete("/levelpacks/:id", async (req, res) => {
+  if (req.user) {
+    const { id } = req.params;
+    const levelPack = await OkeApp.getLevelPack({ id });
+    if (levelPack.data) {
+      if (levelPack.data.kuski_id === req.user.id) {
+        await OkeApp.deleteLevelPack({ id });
+        res.sendStatus(200);
+      } else {
+        res.sendStatus(403);
+      }
+    } else {
+      res.sendStatus(404);
+    }
   } else {
-    res.sendStatus(400);
+    res.sendStatus(401);
+  }
+});
+
+app.delete("/levelpacks", async (req, res) => {
+  if (req.user) {
+    const { levId, id } = req.body;
+    const levelPack = await OkeApp.getLevelPack({ id });
+    if (levelPack.data && levId) {
+      if (levelPack.data.kuski_id === req.user.id) {
+        await OkeApp.removeLevelPackLevel({ levPackId: id, levId });
+        res.sendStatus(200);
+      } else {
+        res.sendStatus(403);
+      }
+    } else {
+      res.sendStatus(400);
+    }
+  } else {
+    res.sendStatus(401);
   }
 });
 
 app.get("/search", async (req, res) => {
-  const { query } = req.query;
+  const { query, types } = req.query;
+  const tArr = types ? types.split(",") : ["kuski", "level"];
+
   if (!query || query.length < 1) res.sendStatus(400);
   else {
-    const kuskis = await OkeApp.searchKuskis({
-      query,
-    });
-    const levels = await OkeApp.searchLevels({
-      query,
-    });
+    const kuskis =
+      tArr.indexOf("kuski") > -1
+        ? await OkeApp.searchKuskis({
+            query,
+          })
+        : null;
+    const levels =
+      tArr.indexOf("level") > -1
+        ? await OkeApp.searchLevels({
+            query,
+          })
+        : null;
+
     res.json({
-      kuskis: kuskis.data,
-      levels: levels.data,
+      kuskis: kuskis ? kuskis.data : null,
+      levels: levels ? levels.data : null,
     });
   }
 });
