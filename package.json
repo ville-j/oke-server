@@ -6,7 +6,7 @@
     "elma-js": "https://github.com/ville-j/elma-js.git",
     "express": "^4.17.1",
     "formidable": "^1.2.1",
-    "jsonwebtoken": "^8.5.1",
+    "jsonwebtoken": "^9.0.0",
     "legacy-encoding": "^3.0.0",
     "node-cmd": "^3.0.0",
     "pg": "^7.12.1",
